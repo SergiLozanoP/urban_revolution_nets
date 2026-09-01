@@ -70,8 +70,8 @@ check_nodes <- function(file_A,file_B){ # file_A and file_B are names of files i
   
   
   # Convert to sf object type for statistical analysis
-  pts_sf_A <- st_as_sf(set_A, coords = c("lat", "long"), crs = 4326)
-  pts_sf_B <- st_as_sf(set_B, coords = c("lat", "long"), crs = 4326)
+  pts_sf_A <- st_as_sf(set_A, coords = c("long", "lat"), crs = 4326)
+  pts_sf_B <- st_as_sf(set_B, coords = c("long", "lat"), crs = 4326)
   
 
   # Plotting
@@ -84,7 +84,7 @@ check_nodes <- function(file_A,file_B){ # file_A and file_B are names of files i
 
   plot(st_geometry(pts_sf_A), col = col_A, pch = 16, cex = 0.8)
   plot(st_geometry(pts_sf_B), col = col_B, pch = 16, cex = 0.8, add = TRUE)
-  legend("topright", legend = c("Used", "Not used"), col = c(col_A, col_B), pch = 16)
+  #legend("topright", legend = c("Used", "Not used"), col = c(col_A, col_B), pch = 16)
 
 }
 
@@ -99,8 +99,10 @@ net_robustness_test <- function(g,metric=c("deg","bet"), type=c("node","edge"), 
   
   metric <- match.arg(metric)
   type <- match.arg(type)
-  jump <- as.integer(length(V(g))*jump)
-  end <- length(V(g))*end
+  
+  if(type=="node"){max=length(V(g))}
+  else{max=length(E(g))}
+  
   
   result <- data.frame()
   set.seed(1)
@@ -109,30 +111,26 @@ net_robustness_test <- function(g,metric=c("deg","bet"), type=c("node","edge"), 
   else{g <- set_vertex_attr(g, "cent", V(g), betweenness(g))}   # Centrality measure: Betweenness
   
   for (i in 1:num_iterations){
-    for (n in seq(jump,end,jump)){
-      if(type=="node"){  # Removing nodes
-        out <- sample(1:length(V(g)),n)
-        test_net <- delete_vertices(g, out)}
-      else{  # Removing edges
-        out <- sample(1:length(E(g)),n)
-        test_net <- delete_edges(g, out)}
+    for (pct in seq(jump,end,jump)){
+      n<-round(pct*max)
+      
+      out <- sample(1:max,n)
+      if(type=="node"){test_net <- delete_vertices(g, out)} # Removing nodes
+      else{test_net <- delete_edges(g, out)}  # Removing edges
       
       if(metric=="deg") {x <- degree(test_net)}
       else{x <- betweenness(test_net)}
       y <- V(test_net)$cent
       correlation <- cor(x, y, method = 'spearman')
       
-      if(type=="node"){max=length(V(g))}
-      else{max=length(E(g))}
-      
-      result <- rbind(result, data.frame(erased=as.character(round(n*100/max)), metric=correlation))    }  
+      result <- rbind(result, data.frame(erased=round(pct*100), metric=correlation))    }
   }
-  result <- result[order(result$erased),]
+  #result <- result[order(result$erased),]
   
   # Plotting test results
   if(type=="node"){label="Removed nodes (%)"}
   else{label="Removed edges (%)"}
-    ggplot(data=result, aes(x=erased, y=metric)) + geom_boxplot() + 
+    ggplot(data=result, aes(x=factor(erased, levels=sort(unique(erased))), y=metric)) + geom_boxplot() + 
     xlab(label) + 
     ylab("Correlation") + 
     ylim(c(0.0, 1.0))
@@ -357,22 +355,22 @@ check_nodes("Data/LC_lat-long_v4.csv","Data/Non-Uruk.csv")  # Sites disregarded 
 
 
 # LC3
-net_robustness_test(LC3_all,metric="deg", type="node", num_iterations=500, jump = 0.01, end=0.09) #Removing Nodes/Impact on Degree
-net_robustness_test(LC3_all,metric="bet", type="node", num_iterations=500, jump = 0.01, end=0.09) #Removing Nodes/Impact on Betweenness
-net_robustness_test(LC3_all,metric="deg", type="edge", num_iterations=500, jump = 0.01, end=0.09) #Removing Edges/Impact on Degree
-net_robustness_test(LC3_all,metric="bet", type="edge", num_iterations=500, jump = 0.01, end=0.09) #Removing Edges/Impact on Betweenness
+net_robustness_test(LC3_all,metric="deg", type="node", num_iterations=500, jump = 0.01, end=0.1) #Removing Nodes/Impact on Degree
+net_robustness_test(LC3_all,metric="bet", type="node", num_iterations=500, jump = 0.01, end=0.1) #Removing Nodes/Impact on Betweenness
+net_robustness_test(LC3_all,metric="deg", type="edge", num_iterations=500, jump = 0.01, end=0.1) #Removing Edges/Impact on Degree
+net_robustness_test(LC3_all,metric="bet", type="edge", num_iterations=500, jump = 0.01, end=0.1) #Removing Edges/Impact on Betweenness
 
 #LC4
-net_robustness_test(LC4_all,metric="deg", type="node", num_iterations=500, jump = 0.01, end=0.09) #Removing Nodes/Impact on Degree
-net_robustness_test(LC4_all,metric="bet", type="node", num_iterations=500, jump = 0.01, end=0.09) #Removing Nodes/Impact on Betweenness
-net_robustness_test(LC4_all,metric="deg", type="edge", num_iterations=500, jump = 0.01, end=0.09) #Removing Edges/Impact on Degree
-net_robustness_test(LC4_all,metric="bet", type="edge", num_iterations=500, jump = 0.01, end=0.09) #Removing Edges/Impact on Betweenness
+net_robustness_test(LC4_all,metric="deg", type="node", num_iterations=500, jump = 0.01, end=0.1) #Removing Nodes/Impact on Degree
+net_robustness_test(LC4_all,metric="bet", type="node", num_iterations=500, jump = 0.01, end=0.1) #Removing Nodes/Impact on Betweenness
+net_robustness_test(LC4_all,metric="deg", type="edge", num_iterations=500, jump = 0.01, end=0.1) #Removing Edges/Impact on Degree
+net_robustness_test(LC4_all,metric="bet", type="edge", num_iterations=500, jump = 0.01, end=0.1) #Removing Edges/Impact on Betweenness
 
 #LC5
-net_robustness_test(LC5_all,metric="deg", type="node", num_iterations=500, jump = 0.01, end=0.09) #Removing Nodes/Impact on Degree
-net_robustness_test(LC5_all,metric="bet", type="node", num_iterations=500, jump = 0.01, end=0.09) #Removing Nodes/Impact on Betweenness
-net_robustness_test(LC5_all,metric="deg", type="edge", num_iterations=500, jump = 0.01, end=0.09) #Removing Edges/Impact on Degree
-net_robustness_test(LC5_all,metric="bet", type="edge", num_iterations=500, jump = 0.01, end=0.09) #Removing Edges/Impact on Betweenness
+net_robustness_test(LC5_all,metric="deg", type="node", num_iterations=500, jump = 0.01, end=0.1) #Removing Nodes/Impact on Degree
+net_robustness_test(LC5_all,metric="bet", type="node", num_iterations=500, jump = 0.01, end=0.1) #Removing Nodes/Impact on Betweenness
+net_robustness_test(LC5_all,metric="deg", type="edge", num_iterations=500, jump = 0.01, end=0.1) #Removing Edges/Impact on Degree
+net_robustness_test(LC5_all,metric="bet", type="edge", num_iterations=500, jump = 0.01, end=0.1) #Removing Edges/Impact on Betweenness
 
 
 
