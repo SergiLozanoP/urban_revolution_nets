@@ -2,7 +2,7 @@
 
 **Authors:** Giacomo Benati & Sergi Lozano
 
-This repository contains the R code and datasets associated with the manuscript *"The Network Structure of the Urban Revolution"*, currently under consideration for publication.
+This repository contains the R code and datasets associated with the manuscript *"The Network Structure of the Urban Revolution"*, accepted for publication in XXXXXX.
 
 ---
 
